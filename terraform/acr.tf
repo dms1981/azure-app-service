@@ -11,16 +11,27 @@ resource "azurerm_container_registry" "acr-main" {
   sku                 = var.acr_sku
 }
 
-resource "azurerm_container_registry_task" "acr-build" {
-  name                  = format("%s-%s", var.acr_task_name, azurerm_container_registry.acr-main.name)
-  container_registry_id = azurerm_container_registry.acr-main.id
-  platform {
-    os = "Windows"
+resource "azuread_application" "acr-app" {
+  display_name = "acr-app"
+}
+
+resource "azuread_service_principal" "acr-sp" {
+  application_id = azuread_application.acr-app.application_id
+}
+
+resource "time_rotating" "acr-sp-rotation" {
+  rotation_days = 7
+}
+
+resource "azuread_service_principal_password" "acr-sp-pass" {
+  service_principal_id = azuread_service_principal.acr-sp.id
+  rotate_when_changed = {
+    rotation = time_rotating.acr-sp-rotation.id
   }
-  docker_step {
-    context_access_token = local.github-personal-access-token.token
-    context_path         = "https://github.com/MicrosoftDocs/mslearn-deploy-run-container-app-service#master"
-    dockerfile_path      = "./dotnet/Dockerfile"
-    image_names          = ["helloworld:{{.Run.ID}}"]
-  }
+}
+
+resource "azurerm_role_assignment" "acr-assignment" {
+  scope                = azurerm_container_registry.acr-main.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal_password.acr-sp-pass.service_principal_id
 }

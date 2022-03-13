@@ -5,6 +5,9 @@
 *.tfstate
 *.tfstate.*
 
+# Ignore terraform lock file
+.terraform.lock.hcl
+
 # Crash log files
 crash.log
 
@@ -30,3 +33,6 @@ override.tf.json
 
 # IntelliJ directories
 .idea/
+
+# Ignore local json with provider values
+terraform/values/*.json
