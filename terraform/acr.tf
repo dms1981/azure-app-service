@@ -35,3 +35,12 @@ resource "azurerm_role_assignment" "acr-assignment" {
   role_definition_name = "Contributor"
   principal_id         = azuread_service_principal_password.acr-sp-pass.service_principal_id
 }
+
+resource "null_resource" "docker_push" {
+  provisioner "local-exec" {
+    command = <<-EOT
+        docker login ${azurerm_container_registry.acr.login_server}
+        docker push ${azurerm_container_registry.acr.login_server}
+      EOT
+  }
+}
